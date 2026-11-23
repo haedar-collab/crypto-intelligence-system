@@ -1883,18 +1883,19 @@ const SIG = (() => {
   function liveStatus(plan, price, CORE, cfg) {
     if (!plan || !(price > 0) || !(plan.entry > 0) || !(plan.stopLoss > 0)) return null;
     const pct = (x) => (x > 0 ? (x / price - 1) * 100 : null);
-    const out = { price, toEntry: pct(plan.entry), toStop: pct(plan.stopLoss), toTp1: pct(plan.tp1), toTp2: pct(plan.tp2) };
+    const out = { price, toEntry: pct(plan.entry), toStop: pct(plan.stopLoss), toTp1: pct(plan.tp1), toTp2: pct(plan.tp2), toTp3: pct(plan.tp3) };
     const tpRef = plan.tp2 > 0 ? plan.tp2 : plan.tp1;
     out.rrNow = tpRef > price && price > plan.stopLoss ? CORE.rr(price, plan.stopLoss, tpRef, cfg.feePct, cfg.slipPct).net : null;
     const band = Math.max(0.003, Math.min(0.01, (plan.entry - plan.stopLoss) / plan.entry * 0.25)); // ±¼ of the stop distance, 0.3–1%
     if (price <= plan.stopLoss) out.state = 'AT OR BELOW STOP';
+    else if (plan.tp3 > 0 && price >= plan.tp3) out.state = 'PAST TP3';
     else if (plan.tp2 > 0 && price >= plan.tp2) out.state = 'PAST TP2';
     else if (plan.tp1 > 0 && price >= plan.tp1) out.state = 'PAST TP1';
     else if (Math.abs(price / plan.entry - 1) <= band || price < plan.entry) out.state = 'IN ENTRY ZONE';
     else out.state = 'ABOVE ENTRY';
     out.chase = out.state === 'ABOVE ENTRY' && isNum(out.rrNow) && out.rrNow < cfg.minRR; // buying now would break the minimum R:R
     // Expired: the plan should no longer be taken at market (target or stop already reached, or chasing).
-    out.expired = out.chase || ['PAST TP1', 'PAST TP2', 'AT OR BELOW STOP'].includes(out.state);
+    out.expired = out.chase || ['PAST TP1', 'PAST TP2', 'PAST TP3', 'AT OR BELOW STOP'].includes(out.state);
     return out;
   }
   /* ---------- signal evaluation ---------- */
@@ -1954,15 +1955,43 @@ const SIG = (() => {
       signalAt: ctx.nowMs, candleAt: m15 && m15.lastClosedOpen ? m15.lastClosedOpen : null,
       dataQuality: dataOk ? 'VALID' : 'NOT USABLE', mtfVerdict: ctx.mtf ? ctx.mtf.verdict : null, risk: { drawdownPct: gate.drawdownPct, dailyLossPct: gate.dailyLossPct, heatPct: gate.heatPct, warn: gate.warn },
     };
-    if (entry && sl) {
+    // Phase 7.6: a WATCH without a structural SMC plan still gets a reference plan so the levels can be watched:
+    // entry = current price, stop = the 12-hour H1 low − 0.25 × ATR(1H). It never passes the stop filter (that needs
+    // a structural invalidation), so it cannot become a BUY and is not paper-traded.
+    let pE = entry && sl ? entry : null, pS = entry && sl ? sl : null, fb = false;
+    const B = ctx.basis;
+    if (!pE && decision === 'WATCH' && B && isNum(B.price) && isNum(B.low12) && isNum(B.atr1h)) {
+      const s2 = B.low12 - 0.25 * B.atr1h;
+      if (s2 > 0 && s2 < B.price) { pE = B.price; pS = s2; fb = true; }
+    }
+    if (pE && pS) {
+      const T3 = targets3(pE, pS, fb ? (plan && plan.tps ? plan.tps.filter((x) => x.price > pE) : []) : tps, cfg);
+      const rrOf = (p) => (isNum(p) && ctx.rr ? ctx.rr(pE, pS, p, cfg.feePct, cfg.slipPct).net : null);
+      const fSize = fb && ctx.sizing ? ctx.sizing({ equity: eq, riskPct: cfg.riskPct, entry: pE, sl: pS, feePct: cfg.feePct, slipPct: cfg.slipPct, tps: T3.map((x) => x.price) }, ctx.filters) : null;
+      const sz = fb ? (fSize && !fSize.errors.length && fSize.qty > 0 ? fSize : null) : (sizeOk ? size : null);
       out.plan = {
-        symbol: ctx.symbol, narrative: ctx.narrative || null, cis: out.cis, entry, entryType: plan.entryType, stopLoss: sl, slPct, tp1, tp2,
-        rrTP1: isNum(tp1) && ctx.rr ? ctx.rr(entry, sl, tp1, cfg.feePct, cfg.slipPct).net : null, rrTP2: isNum(tp2) && ctx.rr ? ctx.rr(entry, sl, tp2, cfg.feePct, cfg.slipPct).net : null,
-        qty: sizeOk ? size.qty : null, notional: sizeOk ? size.value : null, riskAmount: sizeOk ? size.netLoss : null, riskPct: sizeOk ? size.riskPctActual : null,
+        symbol: ctx.symbol, narrative: ctx.narrative || null, cis: out.cis, entry: pE, entryType: fb ? 'Reference: current price (no SMC entry zone yet)' : plan.entryType, stopLoss: pS, slPct: (pE - pS) / pE * 100,
+        slBasis: fb ? 'Below the 12-hour H1 low − 0.25 × ATR(1H) (reference stop, not structural)' : plan.slBasis || null, reference: fb,
+        tp1: T3[0].price, tp2: T3[1].price, tp3: T3[2].price, targets: T3,
+        rrTP1: rrOf(T3[0].price), rrTP2: rrOf(T3[1].price), rrTP3: rrOf(T3[2].price),
+        qty: sz ? sz.qty : null, notional: sz ? sz.value : null, riskAmount: sz ? sz.netLoss : null, riskPct: sz ? sz.riskPctActual : null,
         timeframe: 'H4 structure · H1 setup · M15 entry', setup: setupDescription(ctx), signalAt: ctx.nowMs, dataQuality: out.dataQuality,
-        invalidation: invalidation(ctx, sl), targetsFrom: tps.slice(0, 2).map((x) => x.src),
+        invalidation: invalidation(ctx, pS), targetsFrom: T3.map((x) => x.src),
         timing: T ? { label: T.label, reasons: T.reasons || [], limit: T.limit || null, distAtr: isNum(T.distAtr) ? T.distAtr : null, ageMin: isNum(T.ageMin) ? T.ageMin : null, price: isNum(T.price) ? T.price : null } : null,
       };
+    }
+    return out;
+  }
+  // Three take-profit levels: structural liquidity targets first (H1/H4/D1 buy-side liquidity, equal highs, H4 range
+  // high, as found by the legacy engine), then — only for missing slots — projections at a whole net R multiple
+  // (at least 2R, 3R, 4R and above the previous target). Projections are labelled and never used by the R:R filter.
+  function targets3(entry, sl, tps, cfg) {
+    const c = (cfg.feePct + cfg.slipPct) / 100, netRisk = entry - sl + entry * c + sl * c;
+    const atR = (r) => (r * netRisk + entry * (1 + c)) / (1 - c), rOf = (p) => ((p * (1 - c) - entry * (1 + c)) / netRisk);
+    const out = (tps || []).filter((x) => isNum(x.price) && x.price > entry).slice(0, 3).map((x) => ({ price: x.price, src: x.src || 'Liquidity', projected: false }));
+    while (out.length < 3) {
+      const k = out.length, prevR = out.length ? rOf(out[out.length - 1].price) : 0, r = Math.max(k + 2, Math.floor(prevR + 1e-9) + 1);
+      out.push({ price: atR(r), src: `Projection ${r}R (no liquidity level)`, projected: true, r });
     }
     return out;
   }
@@ -1975,7 +2004,7 @@ const SIG = (() => {
     return [`Close below stop loss ${sl}`, 'H4 structure turns bearish (bearish BOS/CHoCH on a closed H4 candle)', 'M15 closes back below EMA21 before entry fills', 'Data becomes stale or the pair leaves the eligible universe'];
   }
 
-  return { liveStatus, W, CLASSES, DEFAULT_CFG, TIER_RANK, normalizeCfg, riskScore, cis, cisClass, riskGate, evaluate };
+  return { liveStatus, targets3, W, CLASSES, DEFAULT_CFG, TIER_RANK, normalizeCfg, riskScore, cis, cisClass, riskGate, evaluate };
 })();
 
 /* ==== PORTFOLIO ANALYTICS & TRADE JOURNAL (Phase 6) — pure functions ====
@@ -2003,7 +2032,7 @@ const PORT = (() => {
   // A Planned journal entry from a Phase 5 trading plan.
   function fromPlan(plan, signalId, nowMs) {
     return { symbol: plan.symbol, status: 'Planned', setup: plan.setup ? String(plan.setup).slice(0, 160) : 'CIS signal', narrative: plan.narrative || null, date: new Date(nowMs).toISOString().slice(0, 10),
-      entry: plan.entry, sl: plan.stopLoss, tp1: plan.tp1 ?? null, tp: plan.tp2 ?? plan.tp1 ?? null, qty: plan.qty ?? null, fees: 0, cisAtEntry: plan.cis ?? null, reference: signalId || null, note: '', review: '', createdAt: nowMs };
+      entry: plan.entry, sl: plan.stopLoss, tp1: plan.tp1 ?? null, tp: plan.tp2 ?? plan.tp1 ?? null, tp3: plan.tp3 ?? null, qty: plan.qty ?? null, fees: 0, cisAtEntry: plan.cis ?? null, reference: signalId || null, note: '', review: '', createdAt: nowMs };
   }
 
   /* ---------- open position view ---------- */
@@ -2989,6 +3018,10 @@ async function runPhase5Tests(CORE, G) {
   await T('Signal', 'stop wider than 8% fails the stop filter', () => { const c = base(); c.legacy.plan.sl = 90; c.legacy.plan.tps = [{ price: 115 }, { price: 130 }]; const r = G.evaluate(c); return r.failed.includes('stop') || r.failed; });
   await T('Signal', 'notional below the exchange minimum fails sizing', () => { const c = base(); c.riskState.equity = 10; c.filters.minNotional = 50; const r = G.evaluate(c); return (r.failed.includes('size') && /below/.test(r.hard.find((h) => h.id === 'size').detail)) || JSON.stringify(r.hard.find((h) => h.id === 'size')); });
   await T('Signal', 'risk controls blocking = not BUY', () => { const c = base(); c.riskState.todayPnl = -400; const r = G.evaluate(c); return (r.decision !== 'BUY' && r.failed.includes('risk')) || r.decision; });
+  await T('Signal', 'three targets: structural first, missing slots filled by labelled whole-R projections above the last one', () => { const cfg = G.normalizeCfg({}).cfg; const a = G.targets3(100, 96, [{ price: 104, src: 'H1 BSL' }], cfg), b = G.targets3(100, 96, [{ price: 125, src: 'D1 BSL' }], cfg); const rOf = (p) => CORE.rr(100, 96, p, cfg.feePct, cfg.slipPct).net;
+    return (a.length === 3 && a[0].price === 104 && !a[0].projected && a[1].projected && Math.abs(rOf(a[1].price) - 3) < 1e-6 && Math.abs(rOf(a[2].price) - 4) < 1e-6 && b[0].price === 125 && b[1].price > 125 && Math.abs(rOf(b[1].price) - Math.floor(rOf(125)) - 1) < 1e-6) || JSON.stringify([a, b, rOf(125)]); });
+  await T('Signal', 'a WATCH without a structural stop gets a labelled reference plan that still fails the stop filter', () => { const c = base(); c.legacy.plan.sl = null; c.basis = { price: 100, low12: 97, atr1h: 1 }; const r = G.evaluate(c);
+    return (r.decision === 'WATCH' && r.failed.includes('stop') && r.plan && r.plan.reference === true && r.plan.entry === 100 && Math.abs(r.plan.stopLoss - 96.75) < 1e-9 && r.plan.tp3 > r.plan.tp2 && r.plan.tp2 > r.plan.tp1 && r.plan.tp1 > 100) || JSON.stringify([r.decision, r.failed, r.plan]); });
   await T('Signal', 'chasing the break keeps the plan as WATCH and shows the retrace limit; timing off restores BUY', () => { const c = base(); c.timing = { label: 'CHASING', reasons: ['Price is 1.80× ATR(15M) above the break level (max 1)'], limit: { price: 98.5, src: '15M FVG', rr: 3.1 }, distAtr: 1.8 }; const r = G.evaluate(c); const c2 = base(); c2.timing = c.timing; c2.cfg = Object.assign({}, c2.cfg || {}, { requireTiming: false }); const r2 = G.evaluate(c2); return (r.decision === 'WATCH' && r.failed.join() === 'timing' && /retrace limit 98.5/.test(r.hard.find((h) => h.id === 'timing').detail) && r.plan.timing.label === 'CHASING' && r2.decision === 'BUY') || JSON.stringify([r.decision, r.failed, r2.decision, r2.failed]); });
   await T('Signal', 'spot long-only: stop above entry is rejected', () => { const c = base(); c.legacy.plan.sl = 101; const r = G.evaluate(c); return (r.decision !== 'BUY' && r.failed.includes('stop')) || r.decision; });
   return out;

@@ -20,11 +20,12 @@ Untuk mencoba di komputer sendiri, jalankan web server statis apa pun di folder 
 | Sumber | Dipakai untuk | Key |
 |---|---|---|
 | Binance `data-api.binance.vision` | exchangeInfo, ticker 24 jam, candle, order book, aggTrades (arus beli/jual taker) | tidak perlu |
-| Binance WebSocket `data-stream.binance.vision` | harga BTC realtime di bilah atas | tidak perlu |
+| Binance WebSocket `data-stream.binance.vision` | harga semua pair realtime (sekitar 1 detik) dan candle live di chart Price Action & SMC | tidak perlu |
 | CoinGecko API gratis | daftar coin dan kontrak, ranking market cap, kategori coin untuk narasi | opsional (Demo key gratis menaikkan batas) |
 | Etherscan API v2 | transfer token ERC-20 untuk metrik on-chain | key gratis sendiri, diisi di ⚙ Web |
 
 Perbedaan dibanding versi artifact:
+- **Harga realtime lewat WebSocket.** Satu sambungan ke stream `!miniTicker@arr` membawa harga terakhir semua pair kira-kira setiap detik. Harga di tabel dan kartu sinyal berkedip hijau/merah saat berubah, dan bilah atas menampilkan **● LIVE**. Chart Price Action & SMC juga menerima candle live untuk pair dan timeframe yang sedang dibuka. Kalau sambungan putus, aplikasi menyambung ulang otomatis (2 detik, naik sampai 60 detik) dan sementara itu kembali ke polling REST.
 - **aggTrades berfungsi.** Di artifact, sumber ini diblokir kebijakan konektor. Di web, metrik arus transaksi (taker buy/sell) ikut terhitung.
 - **Headline berita tidak tersedia.** API gratis CoinGecko tidak menyediakan berita. Skor narasi tetap jalan tanpa komponen headline, dan statusnya tampil *DEGRADED* di System Health.
 - **Klasifikasi narasi lebih lambat di kunjungan pertama.** API CoinGecko tanpa key dibatasi sekitar 10 panggilan per menit. Setiap kali aplikasi dibuka, 60 coin diklasifikasi otomatis, dan sisanya bisa dijalankan dengan tombol *Classify remaining* di Narrative Intelligence. Hasilnya disimpan 7 hari. Dengan Demo key gratis prosesnya sekitar 3× lebih cepat.

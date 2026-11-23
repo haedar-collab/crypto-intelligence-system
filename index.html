@@ -184,6 +184,9 @@ details.panel>summary::before{content:"▸ ";color:var(--muted)} details.panel[o
 .live{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0;display:grid;gap:4px;background:var(--sunk)}
 .live-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.live-d{display:flex;flex-wrap:wrap;gap:4px 12px}
 .warn-t{color:var(--warn)}
+@keyframes flup{from{background:var(--good-soft)}to{background:transparent}}@keyframes fldn{from{background:var(--crit-soft)}to{background:transparent}}
+.fl-up{animation:flup .9s ease-out}.fl-dn{animation:fldn .9s ease-out}
+@media (prefers-reduced-motion:reduce){.fl-up,.fl-dn{animation:none}}
 .tbtn{cursor:pointer;transition:border-color .12s}.tbtn:hover{border-color:var(--line2)}.tbtn.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}.tbtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .tlink{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}.tlink.on{color:var(--amber);font-weight:600}
 .tilenote{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -222,7 +225,7 @@ details.panel>summary::before{content:"▸ ";color:var(--muted)} details.panel[o
 const $ = (id) => document.getElementById(id);
 const E = window.CISEngine, C = E && E.CORE, D = E && E.DATA, A = E && E.ATTN, N = E && E.NARR, Q = E && E.QUANT, F = E && E.FLOW, G = E && E.SIG, PF = E && E.PORT;
 const BIN = "Binance", CG = "CoinGecko";
-const REST = "https://data-api.binance.vision/api/v3", WSS = "wss://data-stream.binance.vision/ws/btcusdt@miniTicker";
+const REST = "https://data-api.binance.vision/api/v3", WSS = "wss://data-stream.binance.vision/ws/!miniTicker@arr";
 const TFS = ["1d", "4h", "1h", "15m", "5m"];
 const TF_ROLE = { "1d": "Macro trend", "4h": "Primary structure", "1h": "Setup confirmation", "15m": "Entry confirmation", "5m": "Entry refinement (optional)" };
 const TF_STALE = { "5m": 60e3, "15m": 120e3, "1h": 300e3, "4h": 600e3, "1d": 1800e3 };
@@ -257,8 +260,9 @@ Object.assign(ID, {"Watchlist": "Watchlist", "Add to watchlist": "Tambah ke watc
 Object.assign(ID, {"Click again to show all": "Klik lagi untuk menampilkan semua", "Click to filter the table below": "Klik untuk menyaring tabel di bawah", "Fresh EMA 13×21 cross": "Cross EMA 13×21 baru", "Stale or invalid data": "Data basi atau tidak valid", "Filter": "Filter", "pairs": "pair", "Show all": "Tampilkan semua"});
 Object.assign(ID, {"Entry timing": "Waktu entry", "ON TIME": "TEPAT WAKTU", "CHASING": "MENGEJAR", "LATE": "TERLAMBAT", "TOO EARLY": "TERLALU DINI", "NO SETUP": "TIDAK ADA SETUP", "NO DATA": "TIDAK ADA DATA", "break": "break", "above the break": "di atas level break", "Retrace limit": "Limit retrace", "net R:R": "R:R bersih", "EXPIRED": "KEDALUWARSA", "This plan has expired at the current price; re-evaluate the pair first.": "Plan ini sudah kedaluwarsa di harga sekarang; evaluasi ulang pair-nya dulu.", "Re-evaluating after the M15 close": "Evaluasi ulang setelah candle M15 tutup", "BUY/WATCH and watchlist pairs near entry are re-evaluated after every M15 close": "Pair BUY/WATCH dan pair watchlist yang dekat entry dievaluasi ulang setiap candle M15 tutup", "last": "terakhir", "Entry on time (not chasing, not late)": "Entry tepat waktu (tidak mengejar, tidak terlambat)", "Block BUY unless the entry is on time (not chasing the break, not late)": "Blokir BUY kecuali entry tepat waktu (tidak mengejar break, tidak terlambat)"});
 Object.assign(ID, {"in 1 h on": "dalam 1 jam dengan", "volume": "volume", "Momentum alarm": "Alarm momentum", "in 24 h": "dalam 24 jam", "warming up": "pemanasan", "min of price history": "menit riwayat harga", "price history": "riwayat harga", "min": "menit", "only while this page is open": "hanya saat halaman ini terbuka", "A pair is flagged when it rises ≥ 5% in about an hour (or ≥ 3% in 15 min) and one M15 candle check confirms ≥ 3× volume with the close near the high. EARLY uses the still-forming candle. Flagged pairs are evaluated at once and refreshed every 15 s for 4 hours.": "Pair ditandai saat naik ≥ 5% dalam sekitar 1 jam (atau ≥ 3% dalam 15 menit) dan satu cek candle M15 memastikan volume ≥ 3× dengan penutupan dekat high. EARLY memakai candle yang belum tutup. Pair yang ditandai langsung dievaluasi dan harganya diperbarui tiap 15 detik selama 4 jam.", "Historical test of the MOMENTUM rule": "Uji historis aturan MOMENTUM", "No momentum bursts in the last 24 hours.": "Tidak ada lonjakan momentum dalam 24 jam terakhir.", "Time": "Waktu", "Level": "Level", "1 h move": "Gerak 1 jam", "Volume": "Volume", "Price at alert": "Harga saat alarm", "Since alert": "Sejak alarm", "Burst stop": "Stop lonjakan", "CONFIRMED": "TERKONFIRMASI", "EARLY": "AWAL", "Momentum alarm: bursts in the last 2 hours": "Alarm momentum: lonjakan dalam 2 jam terakhir", "NO EDGE. 45 mid-cap pairs, 843 trades, entry at the next M15 open, 2R target, 24 h time exit: −0.08 R per trade (Nov 2025–May 2026) and +0.03 R (May–Nov 2026). After a burst the median move is −1% to −2% over 24 h, while about 30% run another ≥ 10%. Alarm only, never a BUY.": "NO EDGE. 45 pair mid-cap, 843 trade, entry di open M15 berikutnya, target 2R, keluar paksa 24 jam: −0,08 R per trade (Nov 2025–Mei 2026) dan +0,03 R (Mei–Nov 2026). Setelah lonjakan, median gerak 24 jam −1% sampai −2%, tapi sekitar 30% naik lagi ≥ 10%. Hanya alarm, tidak pernah BUY."});
+Object.assign(ID, {"WebSocket stream": "Stream WebSocket", "connected since": "tersambung sejak", "Reconnecting": "Menyambung ulang", "Reference plan": "Plan referensi", "No SMC entry zone or structural stop yet: entry is the current price and the stop sits below the 12-hour H1 low. For watching only; it cannot become a BUY.": "Belum ada zona entry SMC atau stop struktural: entry memakai harga sekarang dan stop di bawah low H1 12 jam terakhir. Hanya untuk dipantau; tidak bisa menjadi BUY.", "Reference: current price (no SMC entry zone yet)": "Referensi: harga sekarang (belum ada zona entry SMC)", "Below the 12-hour H1 low − 0.25 × ATR(1H) (reference stop, not structural)": "Di bawah low H1 12 jam − 0,25 × ATR(1H) (stop referensi, bukan struktural)", "Take profit 3": "Take profit 3", "Entry / SL / TP1 · TP2 · TP3": "Entry / SL / TP1 · TP2 · TP3", "Trading plan": "Trading plan", "Evaluate": "Evaluasi", "Evaluate the pair to get entry, stop loss and three targets drawn on the chart.": "Evaluasi pair ini untuk mendapatkan entry, stop loss dan tiga target yang digambar di chart.", "not drawn for AVOID": "tidak digambar untuk AVOID", "drawn on the chart": "digambar di chart", "From entry": "Dari entry", "Basis": "Dasar", "PAST TP3": "LEWAT TP3", "Price now": "Harga sekarang"});
 let LANG = "en"; try { LANG = localStorage.getItem("cis-lang") === "id" ? "id" : "en"; } catch (e) {}
-const t = (s) => (LANG === "id" && ID[s]) || s;
+const t = (s) => (LANG === "id" && (ID[s] || (typeof s === "string" && /^Projection \d+R \(no liquidity level\)$/.test(s) && s.replace(/^Projection (\d+)R \(no liquidity level\)$/, "Proyeksi $1R (tidak ada level likuiditas)")))) || s;
 
 /* ---------- modules ---------- */
 const MODS = [
@@ -480,7 +484,10 @@ async function fastTick() {
 }
 // Updates every price-age label in place once a second, without a full render.
 function tickAges() {
-  const el = $("qAge"); if (el) { const a = S.tickAt, l = S.live && S.live.at, s = a ? (Date.now() - Math.max(a, l || 0)) / 1000 : null; el.textContent = a ? agoTxt(Math.max(a, l || 0)) + (S.live ? ` · ${S.live.n} ${t("watched")}` : "") : "–"; el.className = s == null ? "" : s > 180 ? "neg" : s > 75 ? "warn-t" : ""; el.title = a ? `${t("Full ticker")}: ${agoTxt(a)}${l ? ` · ${t("watched pairs (15 s)")}: ${agoTxt(l)}` : ""}` : ""; }
+  const el = $("qAge");
+  if (el && wsLive()) { const s = (Date.now() - S.ws.at) / 1000; el.textContent = `● LIVE · ${agoTxt(S.ws.at)}`; el.className = s > 10 ? "warn-t" : "pos"; el.title = `${t("WebSocket stream")}: ${S.wsMini.size} ${t("pairs")} · ${t("connected since")} ${tz(S.ws.since)}`; }
+  else if (el && S.ws.state === "RECONNECTING") { el.textContent = `${t("Reconnecting")}… · ${agoTxt(Math.max(S.tickAt || 0, (S.live && S.live.at) || 0))}`; el.className = "warn-t"; el.title = S.ws.note; }
+  else if (el) { const a = S.tickAt, l = S.live && S.live.at, s = a ? (Date.now() - Math.max(a, l || 0)) / 1000 : null; el.textContent = a ? agoTxt(Math.max(a, l || 0)) + (S.live ? ` · ${S.live.n} ${t("watched")}` : "") : "–"; el.className = s == null ? "" : s > 180 ? "neg" : s > 75 ? "warn-t" : ""; el.title = a ? `${t("Full ticker")}: ${agoTxt(a)}${l ? ` · ${t("watched pairs (15 s)")}: ${agoTxt(l)}` : ""}` : ""; }
   document.querySelectorAll("[data-ago]").forEach((x) => { x.textContent = agoTxt(pxAt(x.dataset.ago)); });
 }
 async function loadKlines(force) {
@@ -509,18 +516,76 @@ async function probeRest() {
     S.probes.rest = { state: "BLOCKED", note: "Direct calls from the page are blocked; data comes through the Binance connector." };
   }
 }
-function probeWs() {
-  let done = false, ws;
-  const fin = (state, note) => { if (done) return; done = true; S.probes.ws = { state, note }; if (state !== "OK") S.mon.mark("WebSocket stream (page)", state === "BLOCKED" ? "BLOCKED" : "DOWN", note); render(); };
-  const t0 = performance.now();
-  try { ws = new WebSocket(WSS); } catch (e) { fin("BLOCKED", "The page's security policy refused the WebSocket connection; prices refresh by polling the connector."); return; }
-  const timer = setTimeout(() => { try { ws.close(); } catch (e) {} fin("BLOCKED", "No stream message within 8 seconds; prices refresh by polling the connector."); }, 8000);
-  ws.onerror = () => { clearTimeout(timer); fin("BLOCKED", "The WebSocket connection was refused; prices refresh by polling the connector."); };
-  ws.onmessage = (m) => {
-    try { const d = JSON.parse(m.data); S.wsPx = { px: +d.c, at: +d.E }; } catch (e) {}
-    if (!done) { clearTimeout(timer); S.mon.record("WebSocket stream (page)", true, Math.round(performance.now() - t0)); done = true; S.probes.ws = { state: "OK", note: "Live BTCUSDT stream connected" }; }
-    renderBar();
+/* ---------- WebSocket: one market-data stream from Binance (public, read-only) ----------
+   !miniTicker@arr pushes every pair's last price, 24h open/high/low and volume about once a second; a kline stream is
+   added for the pair and timeframe open in Price Action & SMC. Prices on screen are repainted in place every second
+   (no full re-render); the 24h ticker rows, live status and alarms are rebuilt from the stream every 15 s.
+   If the page's security policy refuses the connection (claude.ai artifact) the app keeps polling the connector.
+   A dropped connection reconnects with backoff (2 s doubling to 60 s); Binance also closes streams after 24 h. */
+S.ws = { state: "PENDING", at: null, msgs: 0, retry: 0, since: null, note: "" }; S.wsMini = new Map(); S.wsK = null;
+let _ws = null, _wsKSub = null, _wsId = 1;
+const wsLive = () => S.ws.state === "LIVE" && S.ws.at && Date.now() - S.ws.at < 15e3;
+function wsSend(method, params) { try { if (_ws && _ws.readyState === 1) _ws.send(JSON.stringify({ method, params, id: _wsId++ })); } catch (e) {} }
+function probeWs() { wsStart(); }
+function wsStart() {
+  if (_ws) return;
+  let opened = false; const t0 = performance.now(), first = S.ws.state === "PENDING";
+  const fail = (note) => { S.ws.state = "BLOCKED"; S.ws.note = note; S.probes.ws = { state: "BLOCKED", note }; S.mon.mark("WebSocket stream (page)", "BLOCKED", note); render(); };
+  try { _ws = new WebSocket(WSS); } catch (e) { _ws = null; fail("The page's security policy refused the WebSocket connection; prices refresh by polling."); return; }
+  const timer = setTimeout(() => { if (!opened) { try { _ws.close(); } catch (e) {} } }, 8000);
+  _ws.onopen = () => { if (_wsKSub) wsSend("SUBSCRIBE", [_wsKSub]); };
+  _ws.onmessage = (m) => {
+    let d; try { d = JSON.parse(m.data); } catch (e) { return; }
+    if (!opened) {
+      opened = true; clearTimeout(timer);
+      S.ws.state = "LIVE"; S.ws.retry = 0; S.ws.since = Date.now(); S.ws.note = "Live stream: every pair's price about once a second";
+      S.probes.ws = { state: "OK", note: S.ws.note }; S.mon.record("WebSocket stream (page)", true, Math.round(performance.now() - t0)); render();
+    }
+    S.ws.at = Date.now(); S.ws.msgs++;
+    if (Array.isArray(d)) { for (const x of d) if (x && x.s) S.wsMini.set(x.s, { c: +x.c, o: +x.o, h: +x.h, l: +x.l, v: +x.v, q: +x.q, E: +x.E }); }
+    else if (d && d.e === "kline" && d.k) { const k = d.k, tf = k.i; if (S.smc && S.smc.sym === k.s && S.smc.tf === tf) S.wsK = { sym: k.s, tf, k: { t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, closed: !!k.x } }; }
   };
+  _ws.onerror = () => {};
+  _ws.onclose = () => {
+    clearTimeout(timer); _ws = null;
+    if (!opened && first) { fail("The WebSocket connection was refused or silent for 8 s; prices refresh by polling."); return; }
+    S.ws.state = "RECONNECTING"; const wait = Math.min(60e3, 2000 * 2 ** S.ws.retry++); S.ws.note = `Reconnecting in ${Math.round(wait / 1000)} s`;
+    S.mon.mark("WebSocket stream (page)", "DEGRADED", S.ws.note); renderBar();
+    setTimeout(wsStart, wait);
+  };
+}
+// Keeps one kline subscription in step with the pair and timeframe shown in Price Action & SMC.
+function wsChart() {
+  const want = location.hash.replace("#", "") === "smc" && S.smc && S.smc.sym ? `${S.smc.sym.toLowerCase()}@kline_${S.smc.tf}` : null;
+  if (want === _wsKSub) return;
+  if (_wsKSub) wsSend("UNSUBSCRIBE", [_wsKSub]);
+  _wsKSub = want; S.wsK = null;
+  if (want) wsSend("SUBSCRIBE", [want]);
+}
+// Streamed 24h values merged into the REST ticker rows (bid/ask and trade counts stay from the 60 s REST ticker).
+function wsMerge() {
+  if (!S.tick || !S.wsMini.size) return false;
+  S.tick = S.tick.map((x) => { const m = S.wsMini.get(x.symbol); if (!m || !(m.c > 0)) return x;
+    return Object.assign({}, x, { lastPrice: String(m.c), openPrice: String(m.o), highPrice: String(m.h), lowPrice: String(m.l), volume: String(m.v), quoteVolume: String(m.q), priceChange: String(m.c - m.o), priceChangePercent: String(m.o > 0 ? (m.c / m.o - 1) * 100 : 0), closeTime: m.E }); });
+  if (S.uni) S.trows = D.tickerRows(S.tick, S.uni, {}, Date.now());
+  return true;
+}
+// Repaints every on-screen price from the stream once a second, without re-rendering the view.
+function wsPaint() {
+  if (!wsLive() || document.hidden) return;
+  document.querySelectorAll("[data-px]").forEach((el) => { const s = el.dataset.px, m = S.wsMini.get(s); if (!m || !(m.c > 0)) return;
+    const txt = fpx(m.c, tickOf(s)); if (el.textContent !== txt) { const up = m.c > +(el.dataset.v || m.c); el.textContent = txt; el.dataset.v = m.c; el.classList.remove("fl-up", "fl-dn"); void el.offsetWidth; el.classList.add(up ? "fl-up" : "fl-dn"); } });
+  document.querySelectorAll("[data-chg]").forEach((el) => { const m = S.wsMini.get(el.dataset.chg); if (!m || !(m.o > 0)) return; const v = (m.c / m.o - 1) * 100; el.textContent = fpct(v); el.classList.toggle("pos", v > 0); el.classList.toggle("neg", v < 0); });
+  if (S.wsK && location.hash.replace("#", "") === "smc") drawSmcChart();
+  renderBar();
+}
+let _wsSnapAt = 0;
+function wsCycle() { // every 15 s while live: rebuild rows, feed the momentum alarm, re-render
+  if (!wsLive()) return false;
+  wsMerge();
+  S.live = { at: S.ws.at, syms: { has: () => true }, n: S.wsMini.size };
+  if (Date.now() - _wsSnapAt >= 60e3) { _wsSnapAt = Date.now(); momSnap({ at: S.ws.at, data: [...S.wsMini].map(([symbol, m]) => ({ symbol, lastPrice: m.c })) }); }
+  render(); return true;
 }
 
 /* ---------- database ---------- */
@@ -570,12 +635,12 @@ let _tkSrc = null, _tkMap = null;
 function tk(sym) { if (!S.trows) return null; if (_tkSrc !== S.trows) { _tkSrc = S.trows; _tkMap = new Map(S.trows.rows.map((r) => [r.symbol, r])); } return _tkMap.get(sym) || null; }
 const tickOf = (sym) => { const u = S.uniBy && S.uniBy[sym]; return u && u.filters && u.filters.tickSize; };
 const pxTh = () => `<th>${t("Price")}</th><th>24h</th>`;
-function pxTd(sym) { const r = tk(sym); return `<td class="num">${r ? fpx(r.last, tickOf(sym)) : "–"}</td><td class="num ${cls(r && r.chgPct)}">${r ? fpct(r.chgPct) : "–"}</td>`; }
+function pxTd(sym) { const r = tk(sym); return `<td class="num" data-px="${esc(sym)}">${r ? fpx(r.last, tickOf(sym)) : "–"}</td><td class="num ${cls(r && r.chgPct)}" data-chg="${esc(sym)}">${r ? fpct(r.chgPct) : "–"}</td>`; }
 // Age of a price in words (seconds below 2 min, then minutes).
 function agoTxt(at) { if (!at) return "–"; const s = Math.max(0, Math.round((Date.now() - at) / 1000)); return s < 120 ? `${s} ${t("s ago")}` : `${Math.round(s / 60)} ${t("min ago")}`; }
 // When the given pair last got a price: the 15 s watch refresh if it covered this pair, else the full 60 s ticker.
-const pxAt = (sym) => (S.live && S.live.syms.has(sym) && S.live.at) || S.tickAt;
-const LIVE_CHIP = { "IN ENTRY ZONE": "good", "ABOVE ENTRY": "warn", "PAST TP1": "info", "PAST TP2": "info", "AT OR BELOW STOP": "crit" };
+const pxAt = (sym) => (wsLive() && S.wsMini.has(sym) ? S.ws.at : (S.live && S.live.syms.has(sym) && S.live.at) || S.tickAt);
+const LIVE_CHIP = { "IN ENTRY ZONE": "good", "ABOVE ENTRY": "warn", "PAST TP1": "info", "PAST TP2": "info", "PAST TP3": "info", "AT OR BELOW STOP": "crit" };
 const liveExp = (e) => { const r = tk(e.symbol); const ls = e && e.plan && r ? G.liveStatus(e.plan, r.last, C, cfgNow()) : null; return !!(ls && ls.expired); };
 const TIMING_CHIP = { "ON TIME": "good", "CHASING": "warn", "LATE": "crit", "TOO EARLY": "info", "NO SETUP": "", "NO DATA": "" };
 function timingBlock(e) {
@@ -589,14 +654,14 @@ function liveBlock(e) {
   const r = tk(e.symbol), p = e.plan; if (!p || !r || !(r.last > 0)) return "";
   const ls = G.liveStatus(p, r.last, C, cfgNow()); if (!ls) return "";
   const tick = tickOf(e.symbol), d = (k, v) => v == null ? "" : `<span>${t(k)} <b class="num ${cls(v)}">${fpct(v)}</b></span>`;
-  return `<div class="live"><div class="live-top"><span class="xs mu">${t("Price now")}</span> <b class="num">${fpx(r.last, tick)}</b> <span class="small ${cls(r.chgPct)}">${fpct(r.chgPct)}</span> <span class="chip ${LIVE_CHIP[ls.state]}">${esc(t(ls.state))}</span>${ls.chase ? ` <span class="chip crit">${t("chasing: R:R below minimum")}</span>` : ""}${ls.expired ? ` <span class="chip crit"><b>${t("EXPIRED")}</b></span>` : ""} <span class="xs mu" data-ago="${esc(e.symbol)}">${agoTxt(pxAt(e.symbol))}</span></div>
-    <div class="live-d xs"><span class="mu">${t("Move from the current price to")}:</span> ${d("Entry", ls.toEntry)}${d("Stop", ls.toStop)}${d("TP1", ls.toTp1)}${d("TP2", ls.toTp2)}${ls.rrNow != null ? `<span>${t("R:R if bought now")} <b class="num">${ls.rrNow.toFixed(2)}</b></span>` : ""}</div>
+  return `<div class="live"><div class="live-top"><span class="xs mu">${t("Price now")}</span> <b class="num" data-px="${esc(e.symbol)}">${fpx(r.last, tick)}</b> <span class="small ${cls(r.chgPct)}">${fpct(r.chgPct)}</span> <span class="chip ${LIVE_CHIP[ls.state]}">${esc(t(ls.state))}</span>${ls.chase ? ` <span class="chip crit">${t("chasing: R:R below minimum")}</span>` : ""}${ls.expired ? ` <span class="chip crit"><b>${t("EXPIRED")}</b></span>` : ""} <span class="xs mu" data-ago="${esc(e.symbol)}">${agoTxt(pxAt(e.symbol))}</span></div>
+    <div class="live-d xs"><span class="mu">${t("Move from the current price to")}:</span> ${d("Entry", ls.toEntry)}${d("Stop", ls.toStop)}${d("TP1", ls.toTp1)}${d("TP2", ls.toTp2)}${d("TP3", ls.toTp3)}${ls.rrNow != null ? `<span>${t("R:R if bought now")} <b class="num">${ls.rrNow.toFixed(2)}</b></span>` : ""}</div>
     <div class="xs mu">${t("Status uses the latest price only; earlier wicks through the stop or a target are not checked.")}</div></div>`;
 }
 function renderBar() {
   for (const [sym, a, b] of [["BTCUSDT", "qBtc", "qBtcC"], ["ETHUSDT", "qEth", "qEthC"]]) {
     const r = tk(sym), u = S.uniBy && S.uniBy[sym];
-    let px = r && r.last; if (sym === "BTCUSDT" && S.wsPx && S.wsPx.px) px = S.wsPx.px;
+    let px = r && r.last; const wm = wsLive() && S.wsMini.get(sym); if (wm && wm.c > 0) px = wm.c;
     $(a).textContent = fpx(px, u && u.filters.tickSize); $(b).textContent = r ? fpct(r.chgPct) : ""; $(b).className = cls(r && r.chgPct);
   }
   $("qPairs").textContent = S.uni ? S.uni.eligibleCount : "–";
@@ -1204,9 +1269,22 @@ function vSmc() {
     h += `<div class="panel"><div class="ph-row"><h2>${S.smc.tf.toUpperCase()} ${t("chart")}</h2><div class="seg" role="group">${TF_LIST.map((tf) => `<button type="button" data-smctf="${tf}" aria-pressed="${S.smc.tf === tf}">${tf.toUpperCase()}</button>`).join("")}</div></div>
       <div class="chartbox"><canvas id="smcChart" aria-label="${esc(sym)} ${S.smc.tf} candles with EMAs and SMC levels"></canvas></div>
       <div class="legend"><span><i style="background:var(--amber)"></i>EMA13</span><span><i style="background:var(--info)"></i>EMA21</span><span><i style="background:#b48cf2"></i>EMA50</span><span><i style="background:var(--muted)"></i>EMA200</span><span><i style="background:var(--good-soft);border:1px solid var(--good)"></i>${t("Bullish order block")}</span><span><i style="background:var(--info-soft);border:1px solid var(--info)"></i>${t("Bullish FVG")}</span><span><i style="background:var(--crit-soft)"></i>${t("Premium")}</span><span><i style="background:var(--good-soft)"></i>${t("Discount")}</span></div></div>`;
+    h += smcPlanPanel(sym);
     h += `<div class="grid">${tfFacts(a)}${tfSmc(a)}</div>`;
   } else if (a) h += `<div class="banner">${esc(a.why || "Not enough data on this timeframe")}</div>`;
   return h + candidatesPanel();
+}
+// Trading plan for the pair shown in Price Action & SMC (BUY and WATCH; AVOID plans are listed but not drawn).
+function smcPlanPanel(sym) {
+  const e = S.signals[sym], base = (S.uniBy[sym] || {}).base || sym;
+  if (!e) return `<div class="panel"><div class="ph-row"><h2>${t("Trading plan")}</h2><button class="btn sm" type="button" data-evalone="${esc(sym)}" ${S.mcp ? "" : "disabled"}>${t("Evaluate")} ${esc(base)}</button></div><p class="small mu" style="margin:0">${t("Evaluate the pair to get entry, stop loss and three targets drawn on the chart.")}</p></div>`;
+  const p = e.plan, k = tickOf(sym);
+  if (!p) return `<div class="panel"><div class="ph-row"><h2>${t("Trading plan")} <span class="chip ${DEC_CHIP[e.decision]}">${e.decision}</span></h2></div><p class="small mu" style="margin:0">${t("No structural stop or target, so no trading plan.")} ${esc(e.reason || "")}</p></div>`;
+  const row = (name, v, cl, extra) => `<tr><td class="l"><b class="${cl}">${t(name)}</b></td><td class="num">${fpx(v, k)}</td><td class="num ${v >= p.entry ? "pos" : "neg"}">${name === "Entry" ? "–" : `${v >= p.entry ? "+" : ""}${((v / p.entry - 1) * 100).toFixed(2)}%`}</td><td class="l xs mu">${extra || ""}</td></tr>`;
+  return `<div class="panel"><div class="ph-row"><h2>${t("Trading plan")} <span class="chip ${DEC_CHIP[e.decision]}">${e.decision}</span>${p.reference ? ` <span class="chip warn">${t("Reference plan")}</span>` : ""}</h2><span class="xs mu">${t("Evaluated")} ${tz(e.signalAt)}${e.decision === "AVOID" ? ` · ${t("not drawn for AVOID")}` : ` · ${t("drawn on the chart")}`}</span></div>
+    <div class="tw" style="max-height:none"><table><thead><tr><th class="l">${t("Level")}</th><th>${t("Price")}</th><th>${t("From entry")}</th><th class="l">${t("Basis")}</th></tr></thead><tbody>
+    ${row("Entry", p.entry, "", esc(t(p.entryType || "")))}${row("Stop loss", p.stopLoss, "neg", esc(t(p.slBasis || "")))}${[1, 2, 3].map((i) => p["tp" + i] != null ? row("Take profit " + i, p["tp" + i], "pos", `R:R ${p["rrTP" + i] != null ? p["rrTP" + i].toFixed(2) : "–"}${p.targets && p.targets[i - 1] ? " · " + esc(t(p.targets[i - 1].src)) : ""}`) : "").join("")}
+    </tbody></table></div>${p.reference ? `<p class="xs mu" style="margin:0">${t("No SMC entry zone or structural stop yet: entry is the current price and the stop sits below the 12-hour H1 low. For watching only; it cannot become a BUY.")}</p>` : ""}</div>`;
 }
 function tfFacts(a) {
   const i = a.ind, rows = [["Close", fpx(a.close)], ["EMA 13 / 21", `${fpx(i.ema13)} / ${fpx(i.ema21)}`], ["EMA 50 / 200", `${fpx(i.ema50)} / ${fpx(i.ema200)}`], ["EMA stack", a.stack], ["RSI 14", i.rsi != null ? i.rsi.toFixed(1) : "–"], ["ATR 14", i.atr != null ? `${fpx(i.atr)} (${i.atrPct.toFixed(2)}%)` : "–"], ["ADX 14 · +DI / −DI", i.adx != null ? `${i.adx.toFixed(1)} · ${i.pdi.toFixed(1)} / ${i.mdi.toFixed(1)}` : "–"], ["Relative volume", i.relVol != null ? i.relVol.toFixed(2) + "×" : "–"], ["ROC 10", fpct(i.roc)], ["RS vs BTC (20 bars)", fpct(i.rsVsBtc)], ["EMA 13×21", a.cross.state], ["Quant score", a.quant.score != null ? Math.round(a.quant.score) : "–"]];
@@ -1240,6 +1318,17 @@ function drawSmcChart() {
   const c = a._A.candles, n = Math.min(c.length, W < 500 ? 70 : 130), off = c.length - n, vis = c.slice(off);
   const ind = a._ind, padR = 64, padB = 18, pw = W - padR, ph = H - padB;
   let lo = Math.min(...vis.map((x) => x.l)), hi = Math.max(...vis.map((x) => x.h));
+  // live candle from the WebSocket kline stream (same pair and timeframe): replaces or extends the last candle
+  const lk = S.wsK && S.wsK.sym === S.smc.sym && S.wsK.tf === S.smc.tf ? S.wsK.k : null;
+  if (lk) { lo = Math.min(lo, lk.l); hi = Math.max(hi, lk.h); }
+  // trading plan levels (BUY / WATCH): entry, stop and TP1 always in range; TP2/TP3 only if they do not squash the
+  // candles (> 60% more range), otherwise marked at the top edge
+  const ev = S.signals[S.smc.sym], plan = ev && ev.plan && ev.decision !== "AVOID" ? ev.plan : null, offTop = [];
+  if (plan) {
+    const span = hi - lo;
+    for (const v of [plan.entry, plan.stopLoss, plan.tp1]) if (v > 0) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    for (const [nm, v] of [["TP2", plan.tp2], ["TP3", plan.tp3]]) if (v > 0) { if (v <= hi + 0.6 * span) hi = Math.max(hi, v); else offTop.push([nm, v]); }
+  }
   const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
   const X = (i) => (i - off + 0.5) * (pw / n), Y = (p) => (hi - p) / (hi - lo) * ph, bw = Math.max(1, pw / n * 0.62);
   g.fillStyle = col("--ink"); g.fillRect(0, 0, W, H);
@@ -1261,8 +1350,30 @@ function drawSmcChart() {
   // swings
   g.fillStyle = col("--muted");
   for (const s of a._A.swings) { if (s.i < off) continue; g.fillText(s.label || s.type, X(s.i) - 6, s.type === "H" ? Y(s.price) - 6 : Y(s.price) + 14); }
+  if (lk) { // live candle
+    const last = c[c.length - 1], i = lk.t === last.t ? c.length - 1 : lk.t > last.t ? c.length : -1;
+    if (i >= 0) { const up = lk.c >= lk.o, x = i === c.length ? X(c.length - 1) + pw / n : X(i); g.clearRect(x - bw / 2 - 1, 0, bw + 2, ph); g.fillStyle = col("--ink"); g.fillRect(x - bw / 2 - 1, 0, bw + 2, ph); g.strokeStyle = g.fillStyle = up ? col("--good") : col("--crit"); g.beginPath(); g.moveTo(x, Y(lk.h)); g.lineTo(x, Y(lk.l)); g.stroke(); g.globalAlpha = 0.85; g.fillRect(x - bw / 2, Y(Math.max(lk.o, lk.c)), bw, Math.max(1, Y(Math.min(lk.o, lk.c)) - Y(Math.max(lk.o, lk.c)))); g.globalAlpha = 1; }
+  }
+  if (plan) { // trading plan overlay: risk box (entry→stop), reward box (entry→highest visible target), level lines,
+    // and right-axis price tags spaced at least 15 px apart so close levels stay readable
+    const x0 = pw * 0.72, k = tickOf(S.smc.sym), ref = plan.reference ? " ref" : "";
+    g.globalAlpha = 0.16; g.fillStyle = col("--crit"); g.fillRect(x0, Y(plan.entry), pw - x0, Y(plan.stopLoss) - Y(plan.entry));
+    const topV = Math.max(...[plan.tp1, plan.tp2, plan.tp3].filter((v) => v > 0 && v <= hi)); g.fillStyle = col("--good"); g.fillRect(x0, Y(topV), pw - x0, Y(plan.entry) - Y(topV)); g.globalAlpha = 1;
+    const lv = [["TP3", plan.tp3, "--good", [4, 3]], ["TP2", plan.tp2, "--good", [4, 3]], ["TP1", plan.tp1, "--good", [4, 3]], ["Entry" + ref, plan.entry, "--amber", [6, 3]], ["SL" + ref, plan.stopLoss, "--crit", []]].filter(([, v]) => v > lo && v < hi);
+    for (const [, v, cv, dash] of lv) { g.strokeStyle = col(cv); g.lineWidth = 1.3; g.setLineDash(dash); g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(pw, Y(v)); g.stroke(); }
+    g.setLineDash([]); g.lineWidth = 1;
+    const lpv = lk ? lk.c : c[c.length - 1].c, tags = lv.map(([nm, v, cv]) => ({ nm, v, cv })).concat([{ nm: "", v: lpv, cv: "--amber", last: true }]).sort((a, b) => b.v - a.v);
+    let prev = -Infinity; // top → bottom, at least 15 px apart (the last price tag is part of the stack)
+    for (const tg of tags) {
+      const y = Math.max(Y(tg.v), prev + 15); prev = y;
+      g.fillStyle = tg.last ? col("--amber") : tg.cv === "--amber" ? col("--line2") : col(tg.cv); g.fillRect(pw, y - 8, padR, 16);
+      g.fillStyle = tg.last ? col("--amber-ink") : tg.cv === "--amber" ? col("--fg") : "#fff"; g.fillText(fpx(tg.v, k), pw + 3, y + 4);
+      if (tg.nm) { g.fillStyle = col(tg.cv); g.textAlign = "right"; g.fillText(tg.nm, pw - 4, y - 3); g.textAlign = "left"; }
+    }
+    if (offTop.length) { g.fillStyle = col("--good"); g.fillText(offTop.map(([nm, v]) => `${nm} ↑ ${fpx(v, k)} (+${((v / plan.entry - 1) * 100).toFixed(1)}%)`).join("   "), 6, 14); }
+  }
   // last price
-  const lp = c[c.length - 1].c; g.fillStyle = col("--amber"); g.fillRect(pw, Y(lp) - 8, padR, 16); g.fillStyle = col("--amber-ink"); g.fillText(fpx(lp), pw + 4, Y(lp) + 4);
+  const lp = lk ? lk.c : c[c.length - 1].c; if (!plan) { g.fillStyle = col("--amber"); g.fillRect(pw, Y(lp) - 8, padR, 16); g.fillStyle = col("--amber-ink"); g.fillText(fpx(lp), pw + 4, Y(lp) + 4); }
   // time axis
   g.fillStyle = col("--muted"); for (const i of [off, off + Math.floor(n / 2), c.length - 1]) { const d = new Date(c[i].t); g.fillText(S.smc.tf === "1d" || S.smc.tf === "4h" ? d.toISOString().slice(5, 10) : d.toISOString().slice(11, 16), Math.min(pw - 40, Math.max(0, X(i) - 18)), H - 4); }
 }
@@ -1429,6 +1540,14 @@ function computeCIS() {
   }
   S.cisRows = rows.sort((a, b) => (b.c.cis ?? -1) - (a.c.cis ?? -1)); S.cisAt = Date.now();
 }
+// Inputs for a WATCH reference plan when the SMC engine has no structural entry/stop: current price, the low of the
+// last 12 closed H1 candles and ATR(1H).
+function planBasis(tf, sym, close) {
+  const a = tf["1h"] && tf["1h"].ok && tf["1h"]._A; if (!a || !a.candles || a.candles.length < 12) return null;
+  const cs = a.candles.filter((k) => k.closed !== false).slice(-12), lt = tk(sym);
+  const price = lt && lt.last > 0 && Date.now() - pxAt(sym) < 120e3 ? lt.last : close;
+  return { price, low12: Math.min(...cs.map((k) => k.l)), atr1h: a.atrLast };
+}
 async function evaluateSymbol(sym, tag) {
   // Reuse candles only if fetched after the latest M15 close (+5 s) and less than 5 min ago.
   const c0 = S.smc.cache[sym], m15Close = Math.floor(Date.now() / 9e5) * 9e5 + 5e3;
@@ -1447,7 +1566,7 @@ async function evaluateSymbol(sym, tag) {
   }
   computeCIS();
   const row2 = (S.cisRows || []).find((x) => x.sym === sym) || row;
-  const ev = G.evaluate({ symbol: sym, narrative: row2 && row2.narr, nowMs: Date.now(), cfg, riskState: riskNow(), cis: row2 ? row2.c : null, inputsAgeH: inputsAgeH(), mtf: rec.m, quality: rec.quality, ticker: tk(sym), filters, legacy, timing, sizing: C.positionSize, rr: C.rr, validation: validationNow() });
+  const ev = G.evaluate({ symbol: sym, narrative: row2 && row2.narr, nowMs: Date.now(), cfg, riskState: riskNow(), cis: row2 ? row2.c : null, inputsAgeH: inputsAgeH(), mtf: rec.m, quality: rec.quality, ticker: tk(sym), filters, legacy, timing, basis: planBasis(tf, sym, price), sizing: C.positionSize, rr: C.rr, validation: validationNow() });
   const prev = S.signals[sym];
   ev._cand = tag === "cand" || !!(prev && prev._cand); ev._wl = tag === "wl" || !!(prev && prev._wl); ev._manual = !tag || !!(prev && prev._manual);
   S.signals[sym] = ev;
@@ -1473,6 +1592,7 @@ async function evaluateWatchlist() {
   S.wlEval = null; S.smc.batch = null; S.wlStop = false;
   await persistPhase5(); await persistPhase3(); render();
 }
+function planMini(p, sym) { const k = tickOf(sym), f = (v) => (v != null ? fpx(v, k) : "–"); return `${f(p.entry)} / <span class="neg">${f(p.stopLoss)}</span> / <span class="pos">${f(p.tp1)} · ${f(p.tp2)} · ${f(p.tp3)}</span>${p.reference ? ` <span class="chip warn" title="${esc(t("Reference plan"))}">ref</span>` : ""}`; }
 const DEC_ORDER = { BUY: 0, WATCH: 1, AVOID: 2 };
 function wlRows() {
   const cis = new Map((S.cisRows || []).map((x) => [x.sym, x])), cfg = cfgNow();
@@ -1488,8 +1608,8 @@ function wlPanel(where, dec) {
   h += `<p class="xs mu" style="margin:0">${t("Watchlist pairs are evaluated after every scan and every hour, refresh their price every 15 s, come first for order books, trade flow and the on-chain budget, and their decision changes feed the outcome tracker. They pass the same hard filters as every other pair.")} ${last ? `${t("Last evaluation")} ${tz(last.at)} · ${last.n}/${last.total}${last.failed ? ` · <span class="neg">${last.failed} ${t("failed")}</span>` : ""}${last.err ? ` · ${esc(last.err)}` : ""}` : ""}</p>`;
   if (!n) return h + `<div class="empty">${t("No pairs yet. Add symbols above or press ☆ next to any pair in a table.")}</div></div>`;
   const body = capList("w", rows).map((x) => { const e = x.e, base = (S.uniBy[x.symbol] || {}).base || x.symbol, pass = e ? e.hard.filter((f) => f.pass).length : null, fail = e ? e.hard.find((f) => !f.pass) : null;
-    return `<tr class="click${S.wlCard === x.symbol ? " sel" : ""}" data-wlcard="${esc(x.symbol)}"><td class="l">${star(x.symbol)}<b>${esc(base)}</b></td>${pxTd(x.symbol)}<td class="l">${x.r && x.r.tier ? `<span class="tier t-${x.r.tier}">${x.r.tier}</span>` : "–"}</td><td class="l small">${x.c && x.c.narr ? esc(N.NAME[x.c.narr] || x.c.narr) : "–"}</td><td class="num">${x.c && x.c.c.cis != null ? x.c.c.cis.toFixed(0) : "–"}</td><td class="l">${e ? `<span class="chip ${DEC_CHIP[e.decision]}">${e.decision}</span>` : `<span class="xs mu">${t("not evaluated")}</span>`}</td><td class="l">${e ? chipOf(VERDICT_CHIP, e.mtfVerdict) : "–"}</td><td class="l">${x.ls ? `<span class="chip ${LIVE_CHIP[x.ls.state]}">${esc(t(x.ls.state))}</span>${x.ls.expired ? ` <span class="chip crit">${t("EXPIRED")}</span>` : ""}` : "–"}${e && e.plan && e.plan.timing ? ` <span class="chip ${TIMING_CHIP[e.plan.timing.label] || ""}">${esc(t(e.plan.timing.label))}</span>` : ""}</td><td class="l small">${e ? `${pass}/${e.hard.length}${fail ? ` <span class="mu">· ${esc(t(fail.name))}</span>` : ""}` : "–"}</td><td class="l xs mu">${e ? tz(e.signalAt) : "–"}</td></tr>`; }).join("");
-  h += `<div class="tw" style="max-height:520px"><table><thead><tr><th class="l">${t("Symbol")}</th>${pxTh()}<th class="l">${t("Tier")}</th><th class="l">${t("Narrative")}</th><th>CIS</th><th class="l">${t("Decision")}</th><th class="l">MTF</th><th class="l">${t("Live status")}</th><th class="l">${t("Hard filters")}</th><th class="l">${t("Evaluated")}</th></tr></thead><tbody>${body}</tbody></table></div>${moreRows("w", rows.length)}`;
+    return `<tr class="click${S.wlCard === x.symbol ? " sel" : ""}" data-wlcard="${esc(x.symbol)}"><td class="l">${star(x.symbol)}<b>${esc(base)}</b></td>${pxTd(x.symbol)}<td class="l">${x.r && x.r.tier ? `<span class="tier t-${x.r.tier}">${x.r.tier}</span>` : "–"}</td><td class="l small">${x.c && x.c.narr ? esc(N.NAME[x.c.narr] || x.c.narr) : "–"}</td><td class="num">${x.c && x.c.c.cis != null ? x.c.c.cis.toFixed(0) : "–"}</td><td class="l">${e ? `<span class="chip ${DEC_CHIP[e.decision]}">${e.decision}</span>` : `<span class="xs mu">${t("not evaluated")}</span>`}</td><td class="l">${e ? chipOf(VERDICT_CHIP, e.mtfVerdict) : "–"}</td><td class="l">${x.ls ? `<span class="chip ${LIVE_CHIP[x.ls.state]}">${esc(t(x.ls.state))}</span>${x.ls.expired ? ` <span class="chip crit">${t("EXPIRED")}</span>` : ""}` : "–"}${e && e.plan && e.plan.timing ? ` <span class="chip ${TIMING_CHIP[e.plan.timing.label] || ""}">${esc(t(e.plan.timing.label))}</span>` : ""}</td><td class="l xs num">${e && e.plan ? planMini(e.plan, x.symbol) : "–"}</td><td class="l small">${e ? `${pass}/${e.hard.length}${fail ? ` <span class="mu">· ${esc(t(fail.name))}</span>` : ""}` : "–"}</td><td class="l xs mu">${e ? tz(e.signalAt) : "–"}</td></tr>`; }).join("");
+  h += `<div class="tw" style="max-height:520px"><table><thead><tr><th class="l">${t("Symbol")}</th>${pxTh()}<th class="l">${t("Tier")}</th><th class="l">${t("Narrative")}</th><th>CIS</th><th class="l">${t("Decision")}</th><th class="l">MTF</th><th class="l">${t("Live status")}</th><th class="l">${t("Entry / SL / TP1 · TP2 · TP3")}</th><th class="l">${t("Hard filters")}</th><th class="l">${t("Evaluated")}</th></tr></thead><tbody>${body}</tbody></table></div>${moreRows("w", rows.length)}`;
   if (S.wlCard && S.signals[S.wlCard]) h += `<div class="sig-grid">${sigCard(S.signals[S.wlCard])}</div>`;
   else if (S.wlCard) h += `<p class="small mu" style="margin:0">${t("This pair has not been evaluated yet.")} <button class="link" type="button" data-evalone="${esc(S.wlCard)}">${t("Evaluate now")}</button></p>`;
   return h + `</div>`;
@@ -1590,7 +1710,8 @@ function sigCard(e) {
   return `<article class="sig ${e.decision.toLowerCase()}"><div class="sig-top"><span class="sig-sym">${star(e.symbol)}${esc(base)}<span class="di">/USDT</span></span><span class="chip ${DEC_CHIP[e.decision]}" style="font-size:13px">${e.decision}</span></div>
     <div class="small">${e.narrative ? `<span class="chip">${esc(N.NAME[e.narrative] || e.narrative)}</span> ` : ""}CIS <b class="num">${e.cis != null ? e.cis.toFixed(0) : "–"}</b> ${e.cisClass ? `<span class="chip ${CLS_CHIP[e.cisClass]}">${e.cisClass}</span>` : ""} <span class="chip">${esc(e.cisQuality || "")}</span> · MTF ${chipOf(VERDICT_CHIP, e.mtfVerdict)}</div>
     ${liveBlock(e)}${timingBlock(e)}
-    ${p ? `<dl class="levels">${lv("Entry", `${fpx(p.entry, tick)} <span class="xs mu">${esc(p.entryType || "")}</span>`)}${lv("Stop loss", `${fpx(p.stopLoss, tick)} <span class="neg">−${p.slPct.toFixed(2)}%</span>`)}${lv("Take profit 1", p.tp1 != null ? `${fpx(p.tp1, tick)} <span class="xs mu">R:R ${p.rrTP1 != null ? p.rrTP1.toFixed(2) : "–"}</span>` : "–")}${lv("Take profit 2", p.tp2 != null ? `${fpx(p.tp2, tick)} <span class="xs mu">R:R ${p.rrTP2 != null ? p.rrTP2.toFixed(2) : "–"}</span>` : "–")}${lv("Position size", p.qty != null ? `${p.qty} · $${p.notional.toFixed(2)}` : '<span class="mu">not sized</span>')}${lv("Risk amount", p.riskAmount != null ? `$${p.riskAmount.toFixed(2)} (${p.riskPct.toFixed(2)}%)` : "–")}${lv("Timeframe", esc(p.timeframe))}${lv("Signal time", tz(e.signalAt, true))}${lv("Data quality", esc(e.dataQuality))}</dl>` : `<p class="small mu" style="margin:0">${t("No structural stop or target, so no trading plan.")}</p>`}
+    ${p && p.reference ? `<p class="small" style="margin:0"><span class="chip warn">${t("Reference plan")}</span> ${t("No SMC entry zone or structural stop yet: entry is the current price and the stop sits below the 12-hour H1 low. For watching only; it cannot become a BUY.")}</p>` : ""}
+    ${p ? `<dl class="levels">${lv("Entry", `${fpx(p.entry, tick)} <span class="xs mu">${esc(t(p.entryType || ""))}</span>`)}${lv("Stop loss", `${fpx(p.stopLoss, tick)} <span class="neg">−${p.slPct.toFixed(2)}%</span>${p.slBasis ? ` <span class="xs mu">${esc(t(p.slBasis))}</span>` : ""}`)}${[1, 2, 3].map((k) => { const v = p["tp" + k], r = p["rrTP" + k], src = p.targets && p.targets[k - 1]; return lv("Take profit " + k, v != null ? `${fpx(v, tick)} <span class="pos">+${((v / p.entry - 1) * 100).toFixed(2)}%</span> <span class="xs mu">R:R ${r != null ? r.toFixed(2) : "–"}${src ? ` · ${esc(t(src.src))}` : ""}</span>` : "–"); }).join("")}${lv("Position size", p.qty != null ? `${p.qty} · $${p.notional.toFixed(2)}` : '<span class="mu">not sized</span>')}${lv("Risk amount", p.riskAmount != null ? `$${p.riskAmount.toFixed(2)} (${p.riskPct.toFixed(2)}%)` : "–")}${lv("Timeframe", esc(p.timeframe))}${lv("Signal time", tz(e.signalAt, true))}${lv("Data quality", esc(e.dataQuality))}</dl>` : `<p class="small mu" style="margin:0">${t("No structural stop or target, so no trading plan.")}</p>`}
     <details ${e.decision !== "AVOID" ? "open" : ""}><summary>${t("Hard filters")} · ${e.hard.filter((x) => x.pass).length}/${e.hard.length} ${t("passed")}</summary><ul class="gates">${e.hard.map((x) => `<li><span class="gdot ${x.pass ? "ok" : "no"}">${x.pass ? "✓" : "✕"}</span><div><b>${esc(t(x.name))}</b><div class="xs mu">${esc(x.detail)}</div></div></li>`).join("")}</ul></details>
     ${p ? `<details><summary>${t("Setup and invalidation")}</summary><p class="small" style="margin:6px 0">${esc(p.setup)}</p><ul class="small mu" style="margin:0;padding-left:18px">${p.invalidation.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="xs mu" style="margin:6px 0 0">${t("Targets from")}: ${esc((p.targetsFrom || []).join(", ") || "–")}</p></details>` : ""}
     <div class="tools"><button class="btn sm" type="button" data-smc="${esc(e.symbol)}">${t("Open chart")}</button>${p && e.decision !== "AVOID" ? `<button class="btn sm" type="button" data-tojournal="${esc(e.symbol)}" ${S.db && !liveExp(e) ? "" : "disabled"} title="${esc(liveExp(e) ? t("This plan has expired at the current price; re-evaluate the pair first.") : "")}">${t("Add to journal")}</button>` : ""}${p && e.decision === "AVOID" && p.stopLoss < p.entry ? `<button class="btn sm" type="button" data-paper="${esc(e.symbol)}" ${S.db && !(S.paper || []).some((x) => x.id === paperId(e)) ? "" : "disabled"}>${(S.paper || []).some((x) => x.id === paperId(e)) ? t("Paper-traded") : t("Paper-trade this plan")}</button>` : ""}<button class="btn sm" type="button" data-evalone="${esc(e.symbol)}">${t("Re-evaluate")}</button></div></article>`;
@@ -1763,7 +1884,7 @@ async function saveJournal(entry, id) {
   if (rec.status === "Open" && !rec.openedAt) { rec.openedAt = Date.now(); rec.date = rec.date || new Date().toISOString().slice(0, 10); }
   if (rec.status === "Closed" && !rec.closedAt) { rec.closedAt = Date.now(); rec.exitDate = new Date().toISOString().slice(0, 10); }
   if (!rec.narrative) { const b = String(rec.symbol || "").replace(/USDT$/, ""); rec.narrative = (S.tax[b] || {}).primary || null; }
-  for (const k of ["entry", "sl", "tp1", "tp", "qty", "exit", "fees"]) if (rec[k] !== "" && rec[k] != null) rec[k] = Number(rec[k]); else rec[k] = null;
+  for (const k of ["entry", "sl", "tp1", "tp", "tp3", "qty", "exit", "fees"]) if (rec[k] !== "" && rec[k] != null) rec[k] = Number(rec[k]); else rec[k] = null;
   const errs = PF.validateEntry(rec, C);
   if (errs.length) { S.jForm.errs = errs; render(); return false; }
   if (!S.db) { S.jForm.errs = ["Sign in to claude.ai to keep a journal."]; render(); return false; }
@@ -1854,7 +1975,7 @@ function journalForm() {
   return `<form id="jForm" class="wform" style="border:1px solid var(--line2);border-radius:8px;padding:12px"><h2 class="wide">${S.jForm.id ? t("Edit trade") : t("New trade")}${to ? ` → ${esc(to)}` : ""}</h2>
     ${fld("jSym", "Symbol", v.symbol ? String(v.symbol).replace(/USDT$/, "") : "", "text", 'placeholder="SOL" style="text-transform:uppercase"')}
     <label>${t("Status")}<select id="jSt">${PF.STATUSES.map((s) => `<option ${(to || v.status || "Planned") === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
-    ${fld("jEntry", to === "Open" ? "Actual entry fill" : "Entry", v.entry)}${fld("jSl", "Stop loss", v.sl)}${fld("jTp1", "Take profit 1", v.tp1)}${fld("jTp", "Take profit 2", v.tp)}${fld("jQty", to === "Open" ? "Filled quantity" : "Quantity", v.qty)}${fld("jFees", "Fees paid (USDT)", v.fees ?? 0)}
+    ${fld("jEntry", to === "Open" ? "Actual entry fill" : "Entry", v.entry)}${fld("jSl", "Stop loss", v.sl)}${fld("jTp1", "Take profit 1", v.tp1)}${fld("jTp", "Take profit 2", v.tp)}${fld("jTp3", "Take profit 3", v.tp3)}${fld("jQty", to === "Open" ? "Filled quantity" : "Quantity", v.qty)}${fld("jFees", "Fees paid (USDT)", v.fees ?? 0)}
     ${to === "Closed" || v.status === "Closed" ? fld("jExit", "Exit price", v.exit) : ""}
     <label class="wide">${t("Setup")}<input id="jSetup" value="${esc(v.setup || "")}" placeholder="EMA 13×21 retest"></label>
     <label class="wide">${t("Note")}<input id="jNote" value="${esc(v.note || "")}"></label>
@@ -2180,6 +2301,7 @@ function renderNow() {
   const v = $("view"), y = window.scrollY, ae = document.activeElement && document.activeElement.id;
   v.innerHTML = S.view === "overview" ? vOverview() : S.view === "universe" ? vUniverse() : S.view === "health" ? vHealth() : S.view === "narrative" ? vNarrative() : S.view === "attention" ? vAttention() : S.view === "quant" ? vQuant() : S.view === "smc" ? vSmc() : S.view === "wallets" ? vWallets() : S.view === "flow" ? vFlow() : S.view === "signals" ? (computeCIS(), vSignals()) : S.view === "risk" ? vRisk() : S.view === "portfolio" ? vPortfolio() : S.view === "journal" ? vJournal() : vPlanned(S.view);
   if (S.view === "smc") requestAnimationFrame(drawSmcChart);
+  wsChart();
   if (ae && $(ae)) { const el = $(ae); el.focus(); if (el.setSelectionRange && el.type === "search") { const n = el.value.length; el.setSelectionRange(n, n); } }
   window.scrollTo(0, y);
 }
@@ -2224,7 +2346,7 @@ document.addEventListener("click", (e) => {
   const rd = e.target.closest("[data-rdel]"); if (rd) { S.rDel = rd.dataset.rdel; render(); return; }
   if (e.target.closest("[data-rdelno]")) { S.rDel = null; render(); return; }
   const rk = e.target.closest("[data-rdelok]"); if (rk) { S.db && S.db.doc("research/" + rk.dataset.rdelok).delete().catch(() => {}); S.rDel = null; return; }
-  if (e.target.id === "jCsv") { const rows = (S.journal || []).map((x) => Object.assign({}, x, { tp: x.tp, reference: x.reference || "" })); downloadText(`journal-${new Date().toISOString().slice(0, 10)}.csv`, C.toCSV(rows, C.JCOLS.concat(["tp1", "narrative", "cisAtEntry", "openedAt", "closedAt"]))); return; }
+  if (e.target.id === "jCsv") { const rows = (S.journal || []).map((x) => Object.assign({}, x, { tp: x.tp, reference: x.reference || "" })); downloadText(`journal-${new Date().toISOString().slice(0, 10)}.csv`, C.toCSV(rows, C.JCOLS.concat(["tp1", "tp3", "narrative", "cisAtEntry", "openedAt", "closedAt"]))); return; }
   if (e.target.id === "backupBtn") { downloadText(`cis-backup-${new Date().toISOString().slice(0, 10)}.json`, backupJSON()); return; }
   if (e.target.id === "corrBtn") { loadCorrelation(); return; }
   const eo = e.target.closest("[data-evalone]"); if (eo && !e.target.closest("[data-smc]")) { const sym = eo.dataset.evalone; (async () => { S.sig.busy = true; S.sig.done = 0; S.sig.total = 1; render(); await evaluateSymbol(sym); S.sig.busy = false; S.sig.at = Date.now(); await persistPhase5(); render(); })(); return; }
@@ -2259,7 +2381,7 @@ document.addEventListener("submit", (e) => {
   if (e.target.id === "stateForm") { e.preventDefault(); saveState(Object.assign({}, S.rstate, { equity: val("sEq"), peakEquity: val("sPeak"), todayPnl: val("sPnl") })); return; }
   if (e.target.id === "posForm") { e.preventDefault(); const b = (val("pSym") || "").trim().toUpperCase().replace(/USDT$/, ""); const row = eligibleBases().find((r) => r.base === b); if (!row) { S.err = `${b || "Symbol"} is not an eligible Binance Spot USDT pair.`; render(); return; } S.err = null; const st = Object.assign({ open: [] }, S.rstate); st.open = (st.open || []).concat([{ symbol: row.symbol, narrative: (S.tax[row.base] || {}).primary || null, riskAmt: +val("pRisk") || 0 }]); saveState(st); return; }
   if (e.target.id === "btForm") { e.preventDefault(); S.bt.cfg = { syms: val("btSyms"), days: +val("btDays"), folds: +val("btFolds") }; runBacktest(); return; }
-  if (e.target.id === "jForm") { e.preventDefault(); const sym = (val("jSym") || "").trim().toUpperCase().replace(/USDT$/, ""); const row = eligibleBases().find((r) => r.base.toUpperCase() === sym || r.base === (val("jSym") || "").trim()); const v = { symbol: row ? row.symbol : sym + "USDT", status: val("jSt"), entry: val("jEntry"), sl: val("jSl"), tp1: val("jTp1"), tp: val("jTp"), qty: val("jQty"), fees: val("jFees"), setup: val("jSetup"), note: val("jNote") }; if ($("jExit")) v.exit = val("jExit"); if ($("jReview")) v.review = val("jReview"); S.jForm.v = Object.assign({}, S.jForm.v, v); saveJournal(v, S.jForm.id); return; }
+  if (e.target.id === "jForm") { e.preventDefault(); const sym = (val("jSym") || "").trim().toUpperCase().replace(/USDT$/, ""); const row = eligibleBases().find((r) => r.base.toUpperCase() === sym || r.base === (val("jSym") || "").trim()); const v = { symbol: row ? row.symbol : sym + "USDT", status: val("jSt"), entry: val("jEntry"), sl: val("jSl"), tp1: val("jTp1"), tp: val("jTp"), tp3: val("jTp3"), qty: val("jQty"), fees: val("jFees"), setup: val("jSetup"), note: val("jNote") }; if ($("jExit")) v.exit = val("jExit"); if ($("jReview")) v.review = val("jReview"); S.jForm.v = Object.assign({}, S.jForm.v, v); saveJournal(v, S.jForm.id); return; }
   if (e.target.id === "rForm") { e.preventDefault(); const title = (val("rTitle") || "").trim(), body = (val("rBody") || "").trim(); if (!title && !body) return; const rec = { symbol: (val("rSym") || "").trim().toUpperCase() || null, title, body, tags: (val("rTags") || "").split(",").map((x) => x.trim()).filter(Boolean), createdAt: Date.now() }; S.db && S.db.doc("research/r" + Date.now().toString(36)).set(rec).catch((er) => { S.err = errText(er); render(); }); return; }
   if (e.target.id === "pfSetForm") { e.preventDefault(); const v = +val("pfStart"); if (!(v > 0)) return; S.db && S.db.doc("portfolio/settings").set({ startEquity: v, startedAt: Date.now() }).catch((er) => { S.err = errText(er); render(); }); return; }
   if (e.target.id === "calcForm") { e.preventDefault(); S.calc = { sym: (val("kSym") || "").trim(), entry: val("kEntry"), sl: val("kSl"), tp: val("kTp") }; render(); return; }
@@ -2308,7 +2430,8 @@ show(location.hash.slice(1) || "overview");
   }, 1500);
   setInterval(() => { if (!document.hidden && !S.busy) loadTickers(false).then(() => { if (S.uni) S.trows = D.tickerRows(S.tick, S.uni, {}, Date.now()); recomputeAttention(); render(); }).catch((e) => { S.err = errText(e); render(); }); }, 60e3);
   setInterval(() => { if (!document.hidden) refresh(false); }, 5 * 60e3);
-  setInterval(() => { if (!document.hidden && !S.busy) fastTick().catch(() => {}); }, 15e3);
+  setInterval(() => { if (!document.hidden && !S.busy && !wsCycle()) fastTick().catch(() => {}); }, 15e3);
+  setInterval(() => { wsPaint(); }, 1000);
   setInterval(() => { if (!document.hidden) m15Tick().catch(() => {}); }, 20e3);
   setInterval(() => { if (!document.hidden && !S.busy && !(S.scan && S.scan.busy) && !(S.sig && S.sig.busy)) evaluateWatchlist(); }, 60 * 60e3);
   setInterval(() => { if (!document.hidden) tickAges(); }, 1000);
